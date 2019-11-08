@@ -42,6 +42,7 @@ import com.bitcoin.merchant.app.network.websocket.TxWebSocketHandler;
 import com.bitcoin.merchant.app.network.websocket.WebSocketListener;
 import com.bitcoin.merchant.app.network.websocket.impl.bitcoincom.BitcoinComSocketHandler;
 import com.bitcoin.merchant.app.network.websocket.impl.blockchaininfo.BlockchainInfoSocketSocketHandler;
+import com.bitcoin.merchant.app.network.websocket.impl.paybitcoincom.PayBitcoinComSocketHandler;
 import com.bitcoin.merchant.app.screens.AboutActivity;
 import com.bitcoin.merchant.app.screens.NonSwipeViewPager;
 import com.bitcoin.merchant.app.screens.PaymentProcessor;
@@ -71,6 +72,9 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Create
     public static final String ACTION_QUERY_MISSING_TX_THEN_ALL_UTXO = APP_PACKAGE + "MainActivity.ACTION_QUERY_MISSING_TX_THEN_ALL_UTXO";
     public static final String ACTION_QUERY_ALL_UXTO = APP_PACKAGE + "MainActivity.ACTION_QUERY_ALL_UXTO";
     public static final String ACTION_QUERY_ALL_UXTO_FINISHED = APP_PACKAGE + "MainActivity.ACTION_QUERY_ALL_UXTO_FINISHED";
+    public static final String ACTION_START_LISTENING_FOR_BIP70 = APP_PACKAGE + "MainActivity.ACTION_START_LISTENING_FOR_BIP70";
+    public static final String ACTION_STOP_LISTENING_FOR_BIP70 = APP_PACKAGE + "MainActivity.ACTION_STOP_LISTENING_FOR_BIP70";
+    public static final String ACTION_INVOICE_PAYMENT_EXPIRED = APP_PACKAGE + "MainActivity.INVOICE_PAYMENT_EXPIRED";
     public static int SETTINGS_ACTIVITY = 1;
     private static int PIN_ACTIVITY = 2;
     private static int RESET_PIN_ACTIVITY = 3;
@@ -78,6 +82,7 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Create
     DrawerLayout mDrawerLayout;
     private TxWebSocketHandler bitcoinDotComSocket = null;
     private TxWebSocketHandler blockchainDotInfoSocket = null;
+    private PayBitcoinComSocketHandler paybitcoinDotComSocket = null;
     private NetworkStateReceiver networkStateReceiver;
     private NonSwipeViewPager viewPager;
     protected BroadcastReceiver receiver = new BroadcastReceiver() {
@@ -108,6 +113,15 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Create
             }
             if (ACTION_QUERY_ALL_UXTO.equals(intent.getAction())) {
                 new QueryUtxoTask(MainActivity.this, QueryUtxoType.ALL).execute();
+            }
+            if (ACTION_START_LISTENING_FOR_BIP70.equals(intent.getAction())) {
+                //TODO reconnect if necessary
+                String invoiceId = intent.getStringExtra("invoice_id");
+                System.out.println("Now listening for BIP70 invoice: " + invoiceId);
+                paybitcoinDotComSocket.startListeningForInvoice(invoiceId);
+            }
+            if (ACTION_STOP_LISTENING_FOR_BIP70.equals(intent.getAction())) {
+                paybitcoinDotComSocket.disconnect();
             }
         }
     };
@@ -298,6 +312,8 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Create
         blockchainDotInfoSocket = new BlockchainInfoSocketSocketHandler();
         blockchainDotInfoSocket.setListener(this);
         blockchainDotInfoSocket.start();
+        paybitcoinDotComSocket = new PayBitcoinComSocketHandler();
+        paybitcoinDotComSocket.setListener(this);
     }
 
     @Override
@@ -440,6 +456,19 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Create
     public void onIncomingPayment(PaymentReceived p) {
         Intent intent = new Intent(MainActivity.ACTION_INTENT_RECORD_TX);
         p.toIntent(intent);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+    }
+
+    @Override
+    public void onIncomingBIP70Payment(PaymentReceived p) {
+        Intent intent = new Intent(MainActivity.ACTION_INTENT_RECORD_TX);
+        p.toIntent(intent);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+    }
+
+    @Override
+    public void cancelBIP70Payment() {
+        Intent intent = new Intent(MainActivity.ACTION_INVOICE_PAYMENT_EXPIRED);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
