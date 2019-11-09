@@ -39,6 +39,7 @@ public class PaymentInputFragment extends Fragment implements View.OnClickListen
     private static final double bitcoinLimit = 21000000.0;
     public static String AMOUNT_PAYABLE_FIAT = "AMOUNT_PAYABLE_FIAT";
     public static String AMOUNT_PAYABLE_BTC = "AMOUNT_PAYABLE_BTC";
+    public static String INVOICE_HAS_API_KEY = "INVOICE_HAS_API_KEY";
     public double amountPayableFiat = 0.0;
     public double amountPayableBch = 0.0;
     private int allowedDecimalPlaces = 2;
@@ -238,21 +239,33 @@ public class PaymentInputFragment extends Fragment implements View.OnClickListen
 
     public void chargeClicked() {
         String paymentAddress = AppUtil.getReceivingAddress(getContext());
+
         if (!AppUtil.getInstance(getActivity()).hasValidReceiver()) {
-            SnackCustom.make(getActivity(), getView(), getActivity().getText(R.string.no_valid_receiver), getActivity().getResources().getString(R.string.prompt_ok), new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent intent = new Intent(getActivity(), SettingsActivity.class);
-                    startActivityForResult(intent, MainActivity.SETTINGS_ACTIVITY);
-                }
-            });
-            return;
+            if(!paymentAddress.matches("^[a-z]*$") && !(paymentAddress.length() == 40)) {
+                SnackCustom.make(getActivity(), getView(), getActivity().getText(R.string.no_valid_receiver), getActivity().getResources().getString(R.string.prompt_ok), new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent intent = new Intent(getActivity(), SettingsActivity.class);
+                        startActivityForResult(intent, MainActivity.SETTINGS_ACTIVITY);
+                    }
+                });
+
+                return;
+            }
         }
         if (validateAmount()) {
             updateAmounts();
+            boolean hasAPIKey = false;
+            /*
+            Check to see if they have a pay.bitcoin.com API key set
+             */
+            if(paymentAddress.matches("^[a-z]*$") && paymentAddress.length() == 40)
+                hasAPIKey = true;
+
             Intent intent = new Intent(getActivity(), PaymentRequestActivity.class);
             intent.putExtra(AMOUNT_PAYABLE_FIAT, amountPayableFiat);
             intent.putExtra(AMOUNT_PAYABLE_BTC, amountPayableBch);
+            intent.putExtra(INVOICE_HAS_API_KEY, hasAPIKey);
             intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
             startActivityForResult(intent, RECEIVE_RESULT);
         } else {
