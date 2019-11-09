@@ -51,6 +51,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 
 import static com.bitcoin.merchant.app.MainActivity.TAG;
@@ -237,6 +238,7 @@ public class PaymentRequestActivity extends Activity {
             @Override
             protected String doInBackground(Void... params) {
                 try {
+                    //TODO use Gson to convert a Java object to JSON string.
                     String json = "";
                     long lAmount = getLongAmount(amountBch);
 
@@ -265,24 +267,8 @@ public class PaymentRequestActivity extends Activity {
                         json = "{\"address\":\"" + tempAddress + "\",\"amount\":" + lAmount + ", \"webhook\":\"http://somedomain.com/webhook\", \"fiat\":\"USD\", \"memo\":\"Your message here\"}";
                     }
 
-                    URL url = new URL("https://pay.bitcoin.com/create_invoice");
-                    HttpURLConnection con = (HttpURLConnection)url.openConnection();
-                    con.setDoOutput(true);
-                    con.setDoInput(true);
-                    con.setInstanceFollowRedirects(false);
-                    con.setRequestMethod("POST");
-                    con.setRequestProperty("Content-Type", "application/json");
-                    con.setRequestProperty("Accept", "application/json");
-                    con.setUseCaches(false);
-                    con.connect();
-                    DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-                    wr.write(json.getBytes());
-                    wr.flush();
-                    wr.close();
-
-                    BufferedReader rd = new BufferedReader(new InputStreamReader(con.getInputStream()));
-                    String res = rd.readLine();
-                    JSONObject jsonObject = new JSONObject(res);
+                    String response = submitPostAndGetResponse(json);
+                    JSONObject jsonObject = new JSONObject(response);
                     receivingBip70Invoice = jsonObject.getString("paymentId");
                     displayQRCode(receivingBip70Invoice);
                     Intent listenForBip70 = new Intent(MainActivity.ACTION_START_LISTENING_FOR_BIP70);
@@ -301,6 +287,26 @@ public class PaymentRequestActivity extends Activity {
                 progressLayout.setVisibility(View.GONE);
             }
         }.execute();
+    }
+
+    private String submitPostAndGetResponse(String json) throws IOException {
+        URL url = new URL("https://pay.bitcoin.com/create_invoice");
+        HttpURLConnection con = (HttpURLConnection)url.openConnection();
+        con.setDoOutput(true);
+        con.setDoInput(true);
+        con.setInstanceFollowRedirects(false);
+        con.setRequestMethod("POST");
+        con.setRequestProperty("Content-Type", "application/json");
+        con.setRequestProperty("Accept", "application/json");
+        con.setUseCaches(false);
+        con.connect();
+        DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+        wr.write(json.getBytes());
+        wr.flush();
+        wr.close();
+
+        BufferedReader rd = new BufferedReader(new InputStreamReader(con.getInputStream()));
+        return rd.readLine();
     }
 
     private long getLongAmount(double amountPayable) {
