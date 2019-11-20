@@ -120,13 +120,12 @@ public class TransactionsHistoryFragment extends Fragment {
                 }
             }
         });
-        if (adapter.getCount() == 0) {
-            listView.setVisibility(View.GONE);
-            noTxHistoryLv.setVisibility(View.VISIBLE);
-        } else {
-            listView.setVisibility(View.VISIBLE);
-            noTxHistoryLv.setVisibility(View.GONE);
-        }
+        this.setTxListVisibility(adapter.getCount() > 0);
+    }
+
+    private void setTxListVisibility(boolean enabled) {
+        this.listView.setVisibility(enabled ? View.VISIBLE : View.GONE);
+        this.noTxHistoryLv.setVisibility(enabled ? View.GONE : View.VISIBLE);
     }
 
     @Override
@@ -199,8 +198,7 @@ public class TransactionsHistoryFragment extends Fragment {
             if (!isSafe()) {
                 return;
             }
-            listView.setVisibility(View.VISIBLE);
-            noTxHistoryLv.setVisibility(View.GONE);
+            setTxListVisibility(true);
             thisActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -221,8 +219,7 @@ public class TransactionsHistoryFragment extends Fragment {
             if (!isSafe()) {
                 return;
             }
-            listView.setVisibility(View.VISIBLE);
-            noTxHistoryLv.setVisibility(View.GONE);
+            setTxListVisibility(true);
             thisActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -276,16 +273,14 @@ public class TransactionsHistoryFragment extends Fragment {
                 if (result != null && adapter != null) {
                     adapter.reset(result);
                     if (result.size() != 0) {
-                        listView.setVisibility(View.VISIBLE);
-                        noTxHistoryLv.setVisibility(View.GONE);
+                        setTxListVisibility(true);
                     }
                 }
                 if (queryServer) {
                     findAllPotentialMissingTx();
                 } else {
                     if (result != null && result.size() != 0) {
-                        listView.setVisibility(View.VISIBLE);
-                        noTxHistoryLv.setVisibility(View.GONE);
+                        setTxListVisibility(true);
                     }
                     swipeLayout.setRefreshing(false);
                 }
@@ -359,7 +354,7 @@ public class TransactionsHistoryFragment extends Fragment {
             tvDate.setAlpha(0.7f);
             // display coin amount
             long amount = Math.abs(bch);
-            SpannableStringBuilder coinSpan = new SpannableStringBuilder(thisActivity.getResources().getString(R.string.bitcoin_currency_symbol));
+            SpannableStringBuilder coinSpan = new SpannableStringBuilder("BCH");
             coinSpan.setSpan(new RelativeSizeSpan((float) 0.75), 0, 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             TextView coinView = view.findViewById(R.id.tv_amount_coin);
             String displayValue = MonetaryUtil.getInstance(thisActivity).getDisplayAmountWithFormatting(amount);

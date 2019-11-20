@@ -18,14 +18,13 @@ import com.bitcoin.merchant.app.util.ToastCustom;
 
 import java.util.Timer;
 import java.util.TimerTask;
-//import android.util.Log;
 
-public class PinActivity extends Activity implements View.OnClickListener {
+public class PinActivity extends Activity {
     String userEnteredPIN = "";
-    String userEnteredPINConfirm = null;
-    private TextView titleView = null;
-    private TextView[] pinBoxArray = null;
-    private boolean doCreate = false;
+    String userEnteredPINConfirm;
+    private TextView titleView;
+    private TextView[] pinBoxArray;
+    private boolean doCreate ;
 
     public static boolean isPinMissing(Context ctx) {
         String pin = PrefsUtil.getInstance(ctx).getValue(PrefsUtil.MERCHANT_KEY_PIN, "");
@@ -38,7 +37,6 @@ public class PinActivity extends Activity implements View.OnClickListener {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_pin);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        setTitle(R.string.action_pincode);
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
             if (extras.getBoolean("create")) {
@@ -46,28 +44,6 @@ public class PinActivity extends Activity implements View.OnClickListener {
             }
         }
         titleView = findViewById(R.id.titleBox);
-        Button button0 = findViewById(R.id.button0);
-        Button button1 = findViewById(R.id.button1);
-        Button button2 = findViewById(R.id.button2);
-        Button button3 = findViewById(R.id.button3);
-        Button button4 = findViewById(R.id.button4);
-        Button button5 = findViewById(R.id.button5);
-        Button button6 = findViewById(R.id.button6);
-        Button button7 = findViewById(R.id.button7);
-        Button button8 = findViewById(R.id.button8);
-        Button button9 = findViewById(R.id.button9);
-        Button buttonDeleteBack = findViewById(R.id.buttonDeleteBack);
-        button0.setOnClickListener(this);
-        button1.setOnClickListener(this);
-        button2.setOnClickListener(this);
-        button3.setOnClickListener(this);
-        button4.setOnClickListener(this);
-        button5.setOnClickListener(this);
-        button6.setOnClickListener(this);
-        button7.setOnClickListener(this);
-        button8.setOnClickListener(this);
-        button9.setOnClickListener(this);
-        buttonDeleteBack.setOnClickListener(this);
         if (doCreate) {
             titleView.setText(R.string.create_pin);
         } else {
@@ -194,8 +170,7 @@ public class PinActivity extends Activity implements View.OnClickListener {
             this.onBackPressed();
     }
 
-    @Override
-    public void onClick(View view) {
+    public void clickPinButton(View view) {
         Button viewButton = (Button) view;
         if (view.getId() != R.id.buttonDeleteBack)
             padClicked(viewButton.getText().toString());
