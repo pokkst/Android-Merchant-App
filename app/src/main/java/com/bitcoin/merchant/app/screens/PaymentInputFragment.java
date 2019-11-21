@@ -14,6 +14,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.bitcoin.merchant.app.MainActivity;
@@ -32,12 +33,12 @@ import java.text.ParseException;
 import java.util.Currency;
 import java.util.Locale;
 
-public class PaymentInputFragment extends Fragment implements View.OnClickListener {
+public class PaymentInputFragment extends Fragment {
     private static final String TAG = "PaymentInputFragment";
     public static final String DEFAULT_CURRENCY_BCH = "BCH";
     public static final int RECEIVE_RESULT = 1122;
     public static final String ACTION_INTENT_RESET_AMOUNT = "RESET_AMOUNT";
-    private static final double bitcoinLimit = 21000000.0;
+    private static final double bitcoinLimit = 21_000_000.0;
     public static String AMOUNT_PAYABLE_FIAT = "AMOUNT_PAYABLE_FIAT";
     public static String AMOUNT_PAYABLE_BTC = "AMOUNT_PAYABLE_BTC";
     public static String INVOICE_HAS_API_KEY = "INVOICE_HAS_API_KEY";
@@ -80,7 +81,7 @@ public class PaymentInputFragment extends Fragment implements View.OnClickListen
             }
         });
         tvBch = rootView.findViewById(R.id.tv_bch);
-        initalizeButtons();
+        initializeButtons();
         updateAmounts();
         initDecimalButton();
         IntentFilter filter = new IntentFilter();
@@ -92,7 +93,10 @@ public class PaymentInputFragment extends Fragment implements View.OnClickListen
 
     @Override
     public void onDestroyView() {
-        LocalBroadcastManager.getInstance(getActivity().getApplicationContext()).unregisterReceiver(receiver);
+        FragmentActivity activity = getActivity();
+        if (activity != null) {
+            LocalBroadcastManager.getInstance(activity.getApplicationContext()).unregisterReceiver(receiver);
+        }
         super.onDestroyView();
     }
 
@@ -149,39 +153,45 @@ public class PaymentInputFragment extends Fragment implements View.OnClickListen
     }
 
 
-    private void initalizeButtons() {
-        rootView.findViewById(R.id.button0).setOnClickListener(this);
-        rootView.findViewById(R.id.button1).setOnClickListener(this);
-        rootView.findViewById(R.id.button2).setOnClickListener(this);
-        rootView.findViewById(R.id.button3).setOnClickListener(this);
-        rootView.findViewById(R.id.button4).setOnClickListener(this);
-        rootView.findViewById(R.id.button5).setOnClickListener(this);
-        rootView.findViewById(R.id.button6).setOnClickListener(this);
-        rootView.findViewById(R.id.button7).setOnClickListener(this);
-        rootView.findViewById(R.id.button8).setOnClickListener(this);
-        rootView.findViewById(R.id.button9).setOnClickListener(this);
+    private void initializeButtons() {
+        View.OnClickListener digitListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                digitPressed(((Button) v).getText().toString());
+                updateAmounts();
+            }
+        };
+        rootView.findViewById(R.id.button0).setOnClickListener(digitListener);
+        rootView.findViewById(R.id.button1).setOnClickListener(digitListener);
+        rootView.findViewById(R.id.button2).setOnClickListener(digitListener);
+        rootView.findViewById(R.id.button3).setOnClickListener(digitListener);
+        rootView.findViewById(R.id.button4).setOnClickListener(digitListener);
+        rootView.findViewById(R.id.button5).setOnClickListener(digitListener);
+        rootView.findViewById(R.id.button6).setOnClickListener(digitListener);
+        rootView.findViewById(R.id.button7).setOnClickListener(digitListener);
+        rootView.findViewById(R.id.button8).setOnClickListener(digitListener);
+        rootView.findViewById(R.id.button9).setOnClickListener(digitListener);
         buttonDecimal = rootView.findViewById(R.id.buttonDecimal);
-        buttonDecimal.setOnClickListener(this);
+        buttonDecimal.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                decimalPressed();
+                updateAmounts();
+            }
+        });
         Button buttonDeleteBack = rootView.findViewById(R.id.buttonDeleteBack);
-        buttonDeleteBack.setOnClickListener(this);
-    }
-
-    @Override
-    public void onClick(View v) {
-        Button viewButton = (Button) v;
-        if (v.getId() != R.id.buttonDeleteBack && v.getId() != R.id.buttonDecimal)
-            padClicked(viewButton.getText().toString());
-        else if(v.getId() == R.id.buttonDeleteBack)
-            padClicked(null);
-        else if(v.getId() == R.id.buttonDecimal)
-            padClicked(strDecimal);
-
-        updateAmounts();
+        buttonDeleteBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                backspacePressed();
+                updateAmounts();
+            }
+        });
     }
 
     private boolean validateAmount() {
         try {
-            Double value = Double.valueOf(nf.parse(tvAmount.getText().toString()).doubleValue());
+            Double value = nf.parse(tvAmount.getText().toString()).doubleValue();
             return !value.isInfinite() && !value.isNaN() && value > 0.0;
         } catch (Exception e) {
             return false;
@@ -233,53 +243,47 @@ public class PaymentInputFragment extends Fragment implements View.OnClickListen
         }
     }
 
-    public void padClicked(String pad) {
-        // Back clicked
-        if (pad == null) {
-            String e1 = tvAmount.getText().toString();
-            if (e1.length() > 1) {
-                tvAmount.setText(e1.substring(0, e1.length() - 1));
-            } else {
-                tvAmount.setText("0");
-            }
-            return;
-        }
+    private void backspacePressed() {
         String amountText = tvAmount.getText().toString();
-        if (amountText.length() == 1 && amountText.charAt(0) == '0' && !pad.equals(strDecimal)) {
-            tvAmount.setText(pad);
-            return;
+        if (amountText.length() > 1) {
+            tvAmount.setText(amountText.substring(0, amountText.length() - 1));
+        } else {
+            tvAmount.setText("0");
         }
-        //initial input
-        double amount = 0.0;
+    }
+
+    private void decimalPressed() {
+        String amountText = tvAmount.getText().toString();
+        if (amountText.contains(strDecimal)) {
+            return; // Don't allow multiple decimal separators
+        }
+        double amount;
         try {
             amount = nf.parse(amountText).doubleValue();
-        } catch (ParseException pe) {
+        } catch (Exception pe) {
             amount = 0.0;
         }
-        if (amount == 0.0 && pad.equals(strDecimal)) {
+        if (amount == 0.0) {
             tvAmount.setText("0" + strDecimal);
+        } else {
+            tvAmount.append(strDecimal);
+        }
+    }
+
+    private void digitPressed(String digit) {
+        String amountText = tvAmount.getText().toString();
+        if (amountText.equals("0")) {
+            tvAmount.setText(digit);
             return;
         }
-        //Don't allow multiple decimal separators
-        if (amountText.contains(strDecimal) && pad.equals(strDecimal)) {
-            return;
+        int i = amountText.indexOf(strDecimal);
+        if (i >= 0) {
+            String decimalPart = amountText.substring(i + 1);
+            if (decimalPart.length() >= allowedDecimalPlaces) {
+                return;
+            }
         }
-        //Don't allow multiple leading 0's
-        if (amountText.equals("0") && pad.equals("0")) {
-            return;
-        }
-        //Get decimal places
-        if (amountText.contains(strDecimal)) {
-            int decimalPlaces = 0;
-            amountText += pad;
-            String[] result = amountText.split(strDecimal);
-            if (result.length >= 2)
-                decimalPlaces = result[1].length();
-            if (decimalPlaces > allowedDecimalPlaces) return;
-        }
-        // Append tapped #
-        tvAmount.append(pad);
-        //Check that we don't exceed bitcoin limit
+        tvAmount.append(digit);
         checkBitcoinLimit();
     }
 
@@ -287,13 +291,13 @@ public class PaymentInputFragment extends Fragment implements View.OnClickListen
         double currentValue = 0.0;
         try {
             currentValue = nf.parse(tvAmount.getText().toString()).doubleValue();
-        } catch (ParseException e) {
+        } catch (Exception e) {
             Log.e(TAG, "", e);
         }
         double bchValue = 0.0;
         try {
             bchValue = toBch(currentValue);
-        } catch (ParseException e) {
+        } catch (Exception e) {
             Log.e(TAG, "", e);
         }
         if (bchValue > bitcoinLimit) {
