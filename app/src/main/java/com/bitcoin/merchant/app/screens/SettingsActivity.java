@@ -162,12 +162,11 @@ public class SettingsActivity extends Activity {
         });
     }
 
-    private boolean changePin() {
+    private void changePin() {
         Intent intent = new Intent(SettingsActivity.this, PinActivity.class);
         intent.putExtra("create", true);
         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         startActivity(intent);
-        return false;
     }
 
     private void setCurrencySummary(Context context) {
@@ -336,8 +335,11 @@ public class SettingsActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        if (AppUtil.isReceivingAddressAvailable(this) && !this.isScanning) {
-            this.backButton();
-        }
+        if (AppUtil.isReceivingAddressAvailable(this) && !this.isScanning)
+            goToCashRegisterScreenWhenInBackground();
+    }
+
+    private void goToCashRegisterScreenWhenInBackground() {
+        this.backButton();
     }
 }
