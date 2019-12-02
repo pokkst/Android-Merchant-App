@@ -299,6 +299,9 @@ public class MainActivity extends AppCompatActivity implements NfcAdapter.Create
         filter.addAction(ACTION_QUERY_MISSING_TX_IN_MEMPOOL);
         filter.addAction(ACTION_QUERY_MISSING_TX_THEN_ALL_UTXO);
         filter.addAction(ACTION_QUERY_ALL_UXTO);
+        filter.addAction(ACTION_START_LISTENING_FOR_BIP70);
+        filter.addAction(ACTION_STOP_LISTENING_FOR_BIP70);
+        filter.addAction(ACTION_INVOICE_PAYMENT_EXPIRED);
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(receiver, filter);
         filter = new IntentFilter();
         filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
