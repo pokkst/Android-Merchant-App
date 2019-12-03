@@ -8,8 +8,8 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.bitcoin.merchant.app.MainActivity;
 import com.bitcoin.merchant.app.application.CashRegisterApplication;
-import com.bitcoin.merchant.app.model.PaymentReceived;
 import com.bitcoin.merchant.app.database.PaymentRecord;
+import com.bitcoin.merchant.app.model.PaymentReceived;
 import com.bitcoin.merchant.app.model.rest.Utxo;
 import com.bitcoin.merchant.app.model.rest.Utxos;
 import com.bitcoin.merchant.app.util.AppUtil;

@@ -31,9 +31,9 @@ import java.util.Currency;
 import java.util.Locale;
 
 public class PaymentInputFragment extends ToolbarAwareFragment {
-    private static final String TAG = "PaymentInputFragment";
     public static final String DEFAULT_CURRENCY_BCH = "BCH";
     public static final String ACTION_INTENT_RESET_AMOUNT = "RESET_AMOUNT";
+    private static final String TAG = "PaymentInputFragment";
     private static final double bitcoinLimit = 21_000_000.0;
     public static String AMOUNT_PAYABLE_FIAT = "AMOUNT_PAYABLE_FIAT";
     public static String AMOUNT_PAYABLE_BTC = "AMOUNT_PAYABLE_BTC";

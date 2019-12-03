@@ -80,7 +80,7 @@ public class PaymentTooLowDialog {
                 closingAction.run();
             }
         });
-        if (! context.isFinishing()) {
+        if (!context.isFinishing()) {
             alert.show();
         }
     }

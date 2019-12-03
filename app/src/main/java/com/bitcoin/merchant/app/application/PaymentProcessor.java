@@ -5,8 +5,8 @@ import android.util.Log;
 
 import com.bitcoin.merchant.app.currency.CurrencyExchange;
 import com.bitcoin.merchant.app.database.DBControllerV3;
-import com.bitcoin.merchant.app.model.PaymentReceived;
 import com.bitcoin.merchant.app.database.PaymentRecord;
+import com.bitcoin.merchant.app.model.PaymentReceived;
 import com.bitcoin.merchant.app.util.AmountUtil;
 import com.bitcoin.merchant.app.util.AppUtil;
 import com.crashlytics.android.Crashlytics;
