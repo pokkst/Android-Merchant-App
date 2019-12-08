@@ -74,13 +74,12 @@ public class PayBitcoinComSocketHandler {
                                 ExpectedAmounts expected = ExpectedPayments.getInstance().getExpectedAmounts(invoiceId);
                                 PaymentReceived payment = new PaymentReceived(json.getString("paymentId"), invoiceAmount, json.getString("txId"), timeInSec, 0, expected);
                                 Log.i("PayBitcoinComSocket", "expected payment:" + payment);
-                                //webSocketListener.onIncomingBIP70Payment(payment);
+                                webSocketListener.onIncomingBIP70Payment(payment);
                             }
                         }
                     } else if (status.equals("expired")) {
                         if (webSocketListener != null) {
-                            //TODO re-add listener calls
-                            //webSocketListener.cancelBIP70Payment();
+                            webSocketListener.cancelBIP70Payment();
                         }
                     }
                     //System.out.println("pay.bitcoin.com invoice(" + invoiceId + ") status: " + json.getString("status"));
