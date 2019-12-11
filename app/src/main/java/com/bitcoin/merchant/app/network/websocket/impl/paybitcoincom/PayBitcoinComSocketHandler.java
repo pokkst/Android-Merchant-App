@@ -82,7 +82,6 @@ public class PayBitcoinComSocketHandler {
                             webSocketListener.cancelBIP70Payment();
                         }
                     }
-                    //System.out.println("pay.bitcoin.com invoice(" + invoiceId + ") status: " + json.getString("status"));
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }

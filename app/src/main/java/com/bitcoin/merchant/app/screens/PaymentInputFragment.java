@@ -37,6 +37,7 @@ public class PaymentInputFragment extends ToolbarAwareFragment {
     private static final double bitcoinLimit = 21_000_000.0;
     public static String AMOUNT_PAYABLE_FIAT = "AMOUNT_PAYABLE_FIAT";
     public static String AMOUNT_PAYABLE_BTC = "AMOUNT_PAYABLE_BTC";
+    public static String INVOICE_HAS_API_KEY = "INVOICE_HAS_API_KEY";
     public double amountPayableFiat;
     public double amountPayableBch;
     private int allowedDecimalPlaces = 2;

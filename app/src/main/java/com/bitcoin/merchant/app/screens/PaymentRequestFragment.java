@@ -39,6 +39,7 @@ import com.bitcoin.merchant.app.util.AmountUtil;
 import com.bitcoin.merchant.app.util.AppUtil;
 import com.bitcoin.merchant.app.util.MonetaryUtil;
 import com.bitcoin.merchant.app.util.ToastCustom;
+import com.bitcoin.merchant.app.util.WalletUtil;
 import com.github.kiulian.converter.AddressConverter;
 import com.google.bitcoin.uri.BitcoinCashURI;
 import com.google.zxing.BarcodeFormat;
@@ -48,8 +49,16 @@ import com.google.zxing.client.android.encode.QRCodeEncoder;
 
 import org.apache.commons.lang3.StringUtils;
 import org.bitcoinj.core.Coin;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.math.BigInteger;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 import static com.bitcoin.merchant.app.MainActivity.TAG;
 
@@ -62,16 +71,17 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
     private LinearLayout progressLayout;
     private Button ivCancel;
     private Button ivDone;
-    private String receivingAddress;
+    private String receivingBip70Invoice;
+    private boolean hasAPIKey = false;
     protected BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, final Intent intent) {
             if (MainActivity.ACTION_INTENT_EXPECTED_PAYMENT_RECEIVED.equals(intent.getAction())) {
                 PaymentReceived p = new PaymentReceived(intent);
-                if (receivingAddress == null)
+                if (receivingBip70Invoice == null)
                     return;
                 else {
-                    if (!receivingAddress.equalsIgnoreCase(p.addr)) {
+                    if (!receivingBip70Invoice.equalsIgnoreCase(p.addr)) {
                         // different address: might be a previous one, keep the payment request
                         return;
                     }
@@ -113,12 +123,13 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
         LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(activity.getApplicationContext());
         broadcastManager.registerReceiver(receiver, filter);
         Bundle args = getArguments();
+        hasAPIKey = args.getBoolean(PaymentInputFragment.INVOICE_HAS_API_KEY, false);
         double amountFiat = args.getDouble(PaymentInputFragment.AMOUNT_PAYABLE_FIAT, 0.0);
         AmountUtil f = new AmountUtil(activity);
         double amountBch = args.getDouble(PaymentInputFragment.AMOUNT_PAYABLE_BTC, 0.0);
         tvFiatAmount.setText(f.formatFiat(amountFiat));
         tvBtcAmount.setText(f.formatBch(amountBch));
-        getReceiveAddress(getApp(), amountBch, tvFiatAmount.getText().toString());
+        getBIP70Invoice(getApp(), amountBch, tvFiatAmount.getText().toString(), hasAPIKey);
         // Attempt to reconnect in case we were disconnected from Internet
         broadcastManager.sendBroadcast(new Intent(MainActivity.ACTION_INTENT_RECONNECT));
         // Query mempool, in case the previous TX was not received by the socket listeners
@@ -174,7 +185,7 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
     private void cancelPayment() {
         Log.d(TAG, "Canceling payment...");
         activity.onBackPressed();
-        ExpectedPayments.getInstance().removePayment(receivingAddress);
+        ExpectedPayments.getInstance().removePayment(receivingBip70Invoice);
         LocalBroadcastManager.getInstance(activity).sendBroadcast(new Intent(MainActivity.ACTION_QUERY_MISSING_TX_THEN_ALL_UTXO));
     }
 
@@ -189,25 +200,11 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
         }
     }
 
-    private void displayQRCode(long lamount) {
-        String uri = AddressConverter.toCashAddress(receivingAddress);
-        try {
-            BigInteger bamount = MonetaryUtil.getInstance(activity).getUndenominatedAmount(lamount);
-            if (bamount.compareTo(BigInteger.valueOf(21_000_000_000_000_00L)) >= 1) {
-                ToastCustom.makeText(activity, "Invalid amount", ToastCustom.LENGTH_LONG, ToastCustom.TYPE_ERROR);
-                return;
-            }
-            if (!bamount.equals(BigInteger.ZERO)) {
-                qrCodeUri = BitcoinCashURI.toURI(receivingAddress, Coin.valueOf(bamount.longValue()), "", "");
-                generateQRCode(qrCodeUri);
-                write2NFC(qrCodeUri);
-            } else {
-                generateQRCode(uri);
-                write2NFC(uri);
-            }
-        } catch (NumberFormatException e) {
-            generateQRCode(uri);
-            write2NFC(uri);
+    private void displayQRCode(String invoiceId) {
+        if (!invoiceId.equals("")) {
+            qrCodeUri = "bitcoincash:?r=https://pay.bitcoin.com/i/" + invoiceId;
+            generateQRCode(qrCodeUri);
+            write2NFC(qrCodeUri);
         }
     }
 
@@ -243,7 +240,7 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
     }
 
     @SuppressLint("StaticFieldLeak")
-    private void getReceiveAddress(final CashRegisterApplication app, final double amountBch, final String strFiat) {
+    private void getBIP70Invoice(final CashRegisterApplication app, final double amountBch, final String strFiat, final boolean hasAPIKey) {
         new AsyncTask<Void, Void, String>() {
             @Override
             protected void onPreExecute() {
@@ -253,30 +250,47 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
 
             @Override
             protected String doInBackground(Void... params) {
-                // Generate new address/QR code for receive
-                if (AppUtil.isValidXPub(app)) {
-                    try {
-                        receivingAddress = app.getWallet().generateAddressFromXPub();
-                        Log.i(TAG, "BCH-address(xPub) to receive: " + receivingAddress);
-                    } catch (Exception e) {
-                        receivingAddress = null;
-                        Log.e(TAG, "", e);
+                try {
+                    //TODO use Gson to convert a Java object to JSON string.
+                    String json = "";
+                    long lAmount = getLongAmount(amountBch);
+
+                    if(hasAPIKey) {
+                        String paybitcoincomApiKey = AppUtil.getReceivingAddress(app);
+                        json = "{\"apiKey\":\"" + paybitcoincomApiKey + "\",\"amount\":" + lAmount + ", \"webhook\":\"http://somedomain.com/webhook\", \"fiat\":\"USD\", \"memo\":\"Your message here\"}";
+                    } else {
+                        String tempAddress = null;
+                        if (AppUtil.isValidXPub(app)) {
+                            try {
+                                tempAddress = app.getWallet().generateAddressFromXPub();
+                                Log.i(TAG, "BCH-address(xPub) to receive: " + tempAddress);
+                            } catch (Exception e) {
+                                tempAddress = null;
+                                e.printStackTrace();
+                            }
+                        } else {
+                            tempAddress = AppUtil.getReceivingAddress(app);
+                        }
+                        if (StringUtils.isEmpty(tempAddress)) {
+                            ToastCustom.makeText(app, getText(R.string.unable_to_generate_address), ToastCustom.LENGTH_LONG, ToastCustom.TYPE_ERROR);
+                            return null;
+                        }
+
+                        json = "{\"address\":\"" + tempAddress + "\",\"amount\":" + lAmount + ", \"webhook\":\"http://somedomain.com/webhook\", \"fiat\":\"USD\", \"memo\":\"Your message here\"}";
                     }
-                } else {
-                    receivingAddress = AppUtil.getReceivingAddress(app);
+
+                    String response = submitPostAndGetResponse(json);
+                    JSONObject jsonObject = new JSONObject(response);
+                    receivingBip70Invoice = jsonObject.getString("paymentId");
+                    displayQRCode(receivingBip70Invoice);
+                    Intent listenForBip70 = new Intent(MainActivity.ACTION_START_LISTENING_FOR_BIP70);
+                    listenForBip70.putExtra("invoice_id", receivingBip70Invoice);
+                    ExpectedPayments.getInstance().addExpectedPayment(receivingBip70Invoice, lAmount, strFiat);
+                    LocalBroadcastManager.getInstance(app).sendBroadcast(listenForBip70);
+                } catch (JSONException | IOException e) {
+                    e.printStackTrace();
                 }
-                if (StringUtils.isEmpty(receivingAddress)) {
-                    ToastCustom.makeText(activity, getText(R.string.unable_to_generate_address), ToastCustom.LENGTH_LONG, ToastCustom.TYPE_ERROR);
-                    return null;
-                }
-                //Subscribe to websocket to new address
-                Intent intent = new Intent(MainActivity.ACTION_INTENT_SUBSCRIBE_TO_ADDRESS);
-                intent.putExtra("address", receivingAddress);
-                LocalBroadcastManager.getInstance(activity).sendBroadcast(intent);
-                long lAmount = getLongAmount(amountBch);
-                ExpectedPayments.getInstance().addExpectedPayment(receivingAddress, lAmount, strFiat);
-                displayQRCode(lAmount);
-                return receivingAddress;
+                return receivingBip70Invoice;
             }
 
             @Override
@@ -285,6 +299,26 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
                 progressLayout.setVisibility(View.GONE);
             }
         }.execute();
+    }
+
+    private String submitPostAndGetResponse(String json) throws IOException {
+        URL url = new URL("https://pay.bitcoin.com/create_invoice");
+        HttpURLConnection con = (HttpURLConnection)url.openConnection();
+        con.setDoOutput(true);
+        con.setDoInput(true);
+        con.setInstanceFollowRedirects(false);
+        con.setRequestMethod("POST");
+        con.setRequestProperty("Content-Type", "application/json");
+        con.setRequestProperty("Accept", "application/json");
+        con.setUseCaches(false);
+        con.connect();
+        DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+        wr.write(json.getBytes());
+        wr.flush();
+        wr.close();
+
+        BufferedReader rd = new BufferedReader(new InputStreamReader(con.getInputStream()));
+        return rd.readLine();
     }
 
     private long getLongAmount(double amountPayable) {
