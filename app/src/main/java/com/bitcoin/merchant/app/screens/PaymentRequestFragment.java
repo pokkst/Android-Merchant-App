@@ -30,6 +30,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.bitcoin.merchant.app.MainActivity;
 import com.bitcoin.merchant.app.R;
 import com.bitcoin.merchant.app.application.CashRegisterApplication;
+import com.bitcoin.merchant.app.model.Bip70Invoice;
 import com.bitcoin.merchant.app.model.PaymentReceived;
 import com.bitcoin.merchant.app.network.ExpectedPayments;
 import com.bitcoin.merchant.app.screens.dialogs.PaymentTooHighDialog;
@@ -42,6 +43,7 @@ import com.bitcoin.merchant.app.util.ToastCustom;
 import com.bitcoin.merchant.app.util.WalletUtil;
 import com.github.kiulian.converter.AddressConverter;
 import com.google.bitcoin.uri.BitcoinCashURI;
+import com.google.gson.Gson;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.google.zxing.client.android.Contents;
@@ -251,15 +253,15 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
             @Override
             protected String doInBackground(Void... params) {
                 try {
-                    //TODO use Gson to convert a Java object to JSON string.
-                    String json = "";
+                    Bip70Invoice invoice = new Bip70Invoice();
+                    invoice.fiat = "USD";
+                    invoice.memo = "Your message here";
                     long lAmount = getLongAmount(amountBch);
-
+                    invoice.amount = lAmount;
                     if(hasAPIKey) {
-                        String paybitcoincomApiKey = AppUtil.getReceivingAddress(app);
-                        json = "{\"apiKey\":\"" + paybitcoincomApiKey + "\",\"amount\":" + lAmount + ", \"webhook\":\"http://somedomain.com/webhook\", \"fiat\":\"USD\", \"memo\":\"Your message here\"}";
+                        invoice.apiKey = AppUtil.getReceivingAddress(app);
                     } else {
-                        String tempAddress = null;
+                        String tempAddress;
                         if (AppUtil.isValidXPub(app)) {
                             try {
                                 tempAddress = app.getWallet().generateAddressFromXPub();
@@ -276,10 +278,11 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
                             return null;
                         }
 
-                        json = "{\"address\":\"" + tempAddress + "\",\"amount\":" + lAmount + ", \"webhook\":\"http://somedomain.com/webhook\", \"fiat\":\"USD\", \"memo\":\"Your message here\"}";
+                        invoice.address = tempAddress;
                     }
 
-                    String response = submitPostAndGetResponse(json);
+                    Gson gsonHelper = new Gson();
+                    String response = submitPostAndGetResponse(gsonHelper.toJson(invoice));
                     JSONObject jsonObject = new JSONObject(response);
                     receivingBip70Invoice = jsonObject.getString("paymentId");
                     displayQRCode(receivingBip70Invoice);
