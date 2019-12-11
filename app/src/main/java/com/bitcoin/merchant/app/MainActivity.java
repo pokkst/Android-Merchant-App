@@ -111,7 +111,6 @@ public class MainActivity extends AppCompatActivity
                 new QueryUtxoTask(getApp(), QueryUtxoType.ALL).execute();
             }
             if (ACTION_START_LISTENING_FOR_BIP70.equals(intent.getAction())) {
-                //TODO reconnect if necessary
                 String invoiceId = intent.getStringExtra("invoice_id");
                 System.out.println("Now listening for BIP70 invoice: " + invoiceId);
                 paybitcoinDotComSocket.startListeningForInvoice(invoiceId);
