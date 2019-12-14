@@ -355,7 +355,7 @@ public class TransactionsHistoryFragment extends ToolbarAwareFragment {
             SpannableStringBuilder coinSpan = new SpannableStringBuilder("BCH");
             coinSpan.setSpan(new RelativeSizeSpan((float) 0.75), 0, 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             TextView coinView = view.findViewById(R.id.tv_amount_coin);
-            String displayValue = MonetaryUtil.getInstance(activity).getDisplayAmountWithFormatting(amount);
+            String displayValue = MonetaryUtil.getInstance().getDisplayAmountWithFormatting(amount);
             coinView.setText(displayValue + " " + coinSpan);
             // display fiat amount
             TextView fiatView = view.findViewById(R.id.tv_amount_fiat);

@@ -1,7 +1,8 @@
 package com.bitcoin.merchant.app.model;
 
-import com.bitcoin.merchant.app.model.websocket.Tx;
+import androidx.annotation.Keep;
 
+@Keep
 public class Bip70Invoice {
     public String apiKey;
     public String address;

@@ -39,6 +39,7 @@ import com.bitcoin.merchant.app.screens.features.ToolbarAwareFragment;
 import com.bitcoin.merchant.app.util.AmountUtil;
 import com.bitcoin.merchant.app.util.AppUtil;
 import com.bitcoin.merchant.app.util.MonetaryUtil;
+import com.bitcoin.merchant.app.util.PrefsUtil;
 import com.bitcoin.merchant.app.util.ToastCustom;
 import com.bitcoin.merchant.app.util.WalletUtil;
 import com.github.kiulian.converter.AddressConverter;
@@ -257,7 +258,7 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
                 try {
                     Bip70Invoice invoice = new Bip70Invoice();
                     invoice.fiat = "USD";
-                    invoice.memo = "Your message here";
+                    invoice.memo = "Payment to " + PrefsUtil.getInstance(getApp()).getValue(PrefsUtil.MERCHANT_KEY_MERCHANT_NAME, "Bitcoin.com Pay merchant");
                     long lAmount = getLongAmount(amountBch);
                     invoice.amount = lAmount;
                     if(hasAPIKey) {
@@ -284,6 +285,7 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
                     }
 
                     Gson gsonHelper = new Gson();
+                    Log.i(TAG, gsonHelper.toJson(invoice));
                     String response = submitPostAndGetResponse(gsonHelper.toJson(invoice));
                     JSONObject jsonObject = new JSONObject(response);
                     receivingBip70Invoice = jsonObject.getString("paymentId");
