@@ -263,7 +263,8 @@ public class MainActivity extends AppCompatActivity
             public void onDrawerStateChanged(int i) {
             }
         });
-        System.out.println("Stored address: " + AppUtil.getReceivingAddress(this));
+
+        Log.i(TAG, "Stored address: " + AppUtil.getReceivingAddress(this));
     }
 
     /**

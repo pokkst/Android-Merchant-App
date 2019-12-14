@@ -12,8 +12,10 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import androidx.fragment.app.FragmentActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import com.bitcoin.merchant.app.MainActivity;
 import com.bitcoin.merchant.app.R;
 import com.bitcoin.merchant.app.currency.CountryCurrency;
 import com.bitcoin.merchant.app.currency.CurrencyExchange;
@@ -23,6 +25,8 @@ import com.bitcoin.merchant.app.util.MonetaryUtil;
 import com.bitcoin.merchant.app.util.SnackCustom;
 import com.bitcoin.merchant.app.util.ToastCustom;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
@@ -203,7 +207,7 @@ public class PaymentInputFragment extends ToolbarAwareFragment {
     private boolean validateAmount() {
         try {
             Double value = nf.parse(tvAmount.getText().toString()).doubleValue();
-            return !value.isInfinite() && !value.isNaN() && value > 0.0;
+            return !value.isInfinite() && !value.isNaN() && value > 0.0 && getCurrencyPrice() > 0.0;
         } catch (Exception e) {
             return false;
         }
@@ -214,7 +218,7 @@ public class PaymentInputFragment extends ToolbarAwareFragment {
             return;
         }
         if (!AppUtil.hasValidReceiver(activity)) {
-            SnackCustom.make(activity, getView(), activity.getText(R.string.no_valid_receiver), activity.getResources().getString(R.string.prompt_ok), new View.OnClickListener() {
+            SnackCustom.make(activity, getView(), getActivity().getText(R.string.obligatory_receiver), getActivity().getResources().getString(R.string.prompt_ok), new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     getNav().navigate(R.id.nav_to_settings_screen_bypass_security);
@@ -278,47 +282,44 @@ public class PaymentInputFragment extends ToolbarAwareFragment {
     }
 
     private void checkBitcoinLimit() {
-        double currentValue = 0.0;
+        double bchValue = 0.0;
         try {
-            currentValue = nf.parse(tvAmount.getText().toString()).doubleValue();
+            double amount = nf.parse(tvAmount.getText().toString()).doubleValue();
+            bchValue = toBch(amount);
         } catch (Exception e) {
             Log.e(TAG, "", e);
         }
-        double bchValue = 0.0;
-        try {
-            bchValue = toBch(currentValue);
-        } catch (ParseException e) {
-            Log.e(TAG, "", e);
-        }
         if (bchValue > bitcoinLimit) {
-            Double currencyPrice = CurrencyExchange.getInstance(activity).getCurrencyPrice(getCurrency());
+            Double currencyPrice = getCurrencyPrice();
             tvAmount.setText(MonetaryUtil.getInstance().getFiatDecimalFormat().format(bitcoinLimit * currencyPrice));
-            ToastCustom.makeText(activity, getResources().getString(R.string.invalid_amount), ToastCustom.LENGTH_SHORT, ToastCustom.TYPE_ERROR);
+            ToastCustom.makeText(getActivity(), getResources().getString(R.string.invalid_amount), ToastCustom.LENGTH_SHORT, ToastCustom.TYPE_ERROR);
         }
     }
 
     private void updateAmounts() {
         if (tvAmount == null) return;
         try {
-            double amount = nf.parse(tvAmount.getText().toString()).doubleValue();
-            double bch = toBch(amount);
-            amountPayableFiat = amount;
-            amountPayableBch = bch;
+            amountPayableFiat = nf.parse(tvAmount.getText().toString()).doubleValue();
+            amountPayableBch = toBch(amountPayableFiat);
         } catch (Exception e) {
             amountPayableFiat = 0.0;
             amountPayableBch = 0.0;
             Log.e(TAG, "", e);
         }
         if (amountPayableFiat == 0.0) {
-            tvBch.setText("Enter an amount");
+            tvBch.setText(R.string.enter_an_amount);
         } else {
             tvBch.setText(df.format(amountPayableBch) + " BCH");
         }
     }
 
-    private double toBch(double amount) throws ParseException {
-        Double currencyPrice = CurrencyExchange.getInstance(activity).getCurrencyPrice(getCurrency());
-        MonetaryUtil util = MonetaryUtil.getInstance();
-        return (currencyPrice == 0.0d) ? 0.0d : nf.parse(util.getBchDecimalFormat().format(amount / currencyPrice)).doubleValue();
+    private double toBch(double amount) {
+        Double currencyPrice = getCurrencyPrice();
+        return (currencyPrice == 0.0d) ? 0.0d
+                : new BigDecimal(amount).divide(new BigDecimal(currencyPrice), 8, RoundingMode.HALF_EVEN).doubleValue();
+    }
+
+    private Double getCurrencyPrice() {
+        return CurrencyExchange.getInstance(getActivity()).getCurrencyPrice(getCurrency());
     }
 }

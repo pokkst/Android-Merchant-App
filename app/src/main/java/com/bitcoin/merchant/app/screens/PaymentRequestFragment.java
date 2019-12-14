@@ -194,8 +194,10 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
     private void copyQrCodeToClipboard() {
         try {
             ClipboardManager clipboard = (ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = ClipData.newPlainText(qrCodeUri, qrCodeUri);
-            clipboard.setPrimaryClip(clip);
+            if (clipboard != null) {
+                ClipData clip = ClipData.newPlainText(qrCodeUri, qrCodeUri);
+                clipboard.setPrimaryClip(clip);
+            }
             Log.i(TAG, "Copied to clipboard: " + qrCodeUri);
         } catch (Exception e) {
             Log.i(TAG, "Failed to copy to clipboard: " + qrCodeUri);
