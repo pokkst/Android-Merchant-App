@@ -8,9 +8,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class RequestHelper {
-    private static final String API_URL = "https://api.pay.bitcoin.com/";
+    private static final String API_URL = "https://pay.bitcoin.com/";
     private static final String ENDPOINT_PAIRING_CODE = "use-pairing-code";
     private static final String ENDPOINT_REGISTER_MERCHANT = "register-merchant";
+    private static final String ENDPOINT_CREATE_INVOICE = "create_invoice";
 
     //TODO use the actual endpoints rather than these placeholders since i can't remember the real ones right now
     public String usePairingCode(String json) throws IOException {
@@ -19,6 +20,10 @@ public class RequestHelper {
 
     public String registerMerchant(String json) throws IOException {
         return this.post(ENDPOINT_REGISTER_MERCHANT, json);
+    }
+
+    public String createInvoice(String json) throws IOException {
+        return this.post(ENDPOINT_CREATE_INVOICE, json);
     }
 
     private String post(String endpoint, String json) throws IOException {

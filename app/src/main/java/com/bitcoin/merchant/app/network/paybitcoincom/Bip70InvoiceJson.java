@@ -1,9 +1,9 @@
-package com.bitcoin.merchant.app.model;
+package com.bitcoin.merchant.app.network.paybitcoincom;
 
 import androidx.annotation.Keep;
 
 @Keep
-public class Bip70Invoice {
+public class Bip70InvoiceJson {
     public String apiKey;
     public String address;
     public long amount;

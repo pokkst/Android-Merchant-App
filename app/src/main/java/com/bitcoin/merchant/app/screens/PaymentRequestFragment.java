@@ -30,20 +30,17 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.bitcoin.merchant.app.MainActivity;
 import com.bitcoin.merchant.app.R;
 import com.bitcoin.merchant.app.application.CashRegisterApplication;
-import com.bitcoin.merchant.app.model.Bip70Invoice;
+import com.bitcoin.merchant.app.network.paybitcoincom.Bip70InvoiceJson;
 import com.bitcoin.merchant.app.model.PaymentReceived;
 import com.bitcoin.merchant.app.network.ExpectedPayments;
+import com.bitcoin.merchant.app.network.paybitcoincom.RequestHelper;
 import com.bitcoin.merchant.app.screens.dialogs.PaymentTooHighDialog;
 import com.bitcoin.merchant.app.screens.dialogs.PaymentTooLowDialog;
 import com.bitcoin.merchant.app.screens.features.ToolbarAwareFragment;
 import com.bitcoin.merchant.app.util.AmountUtil;
 import com.bitcoin.merchant.app.util.AppUtil;
-import com.bitcoin.merchant.app.util.MonetaryUtil;
 import com.bitcoin.merchant.app.util.PrefsUtil;
 import com.bitcoin.merchant.app.util.ToastCustom;
-import com.bitcoin.merchant.app.util.WalletUtil;
-import com.github.kiulian.converter.AddressConverter;
-import com.google.bitcoin.uri.BitcoinCashURI;
 import com.google.gson.Gson;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
@@ -51,7 +48,6 @@ import com.google.zxing.client.android.Contents;
 import com.google.zxing.client.android.encode.QRCodeEncoder;
 
 import org.apache.commons.lang3.StringUtils;
-import org.bitcoinj.core.Coin;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -59,7 +55,6 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -256,7 +251,7 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
             @Override
             protected String doInBackground(Void... params) {
                 try {
-                    Bip70Invoice invoice = new Bip70Invoice();
+                    Bip70InvoiceJson invoice = new Bip70InvoiceJson();
                     invoice.fiat = "USD";
                     invoice.memo = "Payment to " + PrefsUtil.getInstance(getApp()).getValue(PrefsUtil.MERCHANT_KEY_MERCHANT_NAME, "Bitcoin.com Pay merchant");
                     long lAmount = getLongAmount(amountBch);
@@ -286,7 +281,8 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
 
                     Gson gsonHelper = new Gson();
                     Log.i(TAG, gsonHelper.toJson(invoice));
-                    String response = submitPostAndGetResponse(gsonHelper.toJson(invoice));
+                    //TODO move new RequestHelper() to an object in AppUtil (or something) so we don't need to make a new one each time
+                    String response = new RequestHelper().createInvoice(gsonHelper.toJson(invoice));
                     JSONObject jsonObject = new JSONObject(response);
                     receivingBip70Invoice = jsonObject.getString("paymentId");
                     displayQRCode(receivingBip70Invoice);
@@ -306,26 +302,6 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
                 progressLayout.setVisibility(View.GONE);
             }
         }.execute();
-    }
-
-    private String submitPostAndGetResponse(String json) throws IOException {
-        URL url = new URL("https://pay.bitcoin.com/create_invoice");
-        HttpURLConnection con = (HttpURLConnection)url.openConnection();
-        con.setDoOutput(true);
-        con.setDoInput(true);
-        con.setInstanceFollowRedirects(false);
-        con.setRequestMethod("POST");
-        con.setRequestProperty("Content-Type", "application/json");
-        con.setRequestProperty("Accept", "application/json");
-        con.setUseCaches(false);
-        con.connect();
-        DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-        wr.write(json.getBytes());
-        wr.flush();
-        wr.close();
-
-        BufferedReader rd = new BufferedReader(new InputStreamReader(con.getInputStream()));
-        return rd.readLine();
     }
 
     private long getLongAmount(double amountPayable) {
