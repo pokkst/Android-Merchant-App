@@ -8,17 +8,21 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class RequestHelper {
+    private static final String API_URL = "https://api.pay.bitcoin.com/";
+    private static final String ENDPOINT_PAIRING_CODE = "use-pairing-code";
+    private static final String ENDPOINT_REGISTER_MERCHANT = "register-merchant";
+
     //TODO use the actual endpoints rather than these placeholders since i can't remember the real ones right now
     public String usePairingCode(String json) throws IOException {
-        return this.post("use-pairing-code", json);
+        return this.post(ENDPOINT_PAIRING_CODE, json);
     }
 
     public String registerMerchant(String json) throws IOException {
-        return this.post("register-merchant", json);
+        return this.post(ENDPOINT_REGISTER_MERCHANT, json);
     }
 
     private String post(String endpoint, String json) throws IOException {
-        URL url = new URL("https://api.pay.bitcoin.com/" + endpoint);
+        URL url = new URL(API_URL + endpoint);
         HttpURLConnection con = (HttpURLConnection)url.openConnection();
         con.setDoOutput(true);
         con.setDoInput(true);
