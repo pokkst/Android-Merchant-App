@@ -14,6 +14,8 @@ import android.nfc.NfcAdapter;
 import android.nfc.NfcEvent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.CountDownTimer;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -57,6 +59,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import static com.bitcoin.merchant.app.MainActivity.TAG;
 
@@ -185,6 +190,7 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
         activity.onBackPressed();
         ExpectedPayments.getInstance().removePayment(receivingBip70Invoice);
         LocalBroadcastManager.getInstance(activity).sendBroadcast(new Intent(MainActivity.ACTION_QUERY_MISSING_TX_THEN_ALL_UTXO));
+        LocalBroadcastManager.getInstance(activity).sendBroadcast(new Intent(MainActivity.ACTION_STOP_LISTENING_FOR_BIP70));
     }
 
     private void copyQrCodeToClipboard() {
@@ -200,10 +206,46 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
         }
     }
 
-    private void displayQRCode(String invoiceId) {
+    private void displayQRCode(String invoiceId, final String startDate, final String expirationDate) {
         if (!invoiceId.equals("")) {
             qrCodeUri = "bitcoincash:?r=https://pay.bitcoin.com/i/" + invoiceId;
             generateQRCode(qrCodeUri);
+
+            Handler mainThread = new Handler(activity.getMainLooper());
+
+            Runnable myRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss'Z'");
+                    Date expirationTime = null;
+                    Date creationTime = null;
+                    try {
+                        expirationTime = format.parse(expirationDate);
+                        creationTime = format.parse(startDate);
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
+                    long timeLimit = expirationTime.getTime() - creationTime.getTime();
+                    CountDownTimer mCountDownTimer = new CountDownTimer(timeLimit, 1000) {
+                        @Override
+                        public void onTick(long millisUntilFinished) {
+                            long secondsLeft = millisUntilFinished / 1000L;
+
+                            System.out.println(secondsLeft);
+                            if(secondsLeft <= 0) {
+                                cancelPayment();
+                            }
+                        }
+
+                        @Override
+                        public void onFinish() {
+
+                        }
+                    }.start();
+                }
+            };
+            mainThread.post(myRunnable);
+
             write2NFC(qrCodeUri);
         }
     }
@@ -284,8 +326,10 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
                     //TODO move new RequestHelper() to an object in AppUtil (or something) so we don't need to make a new one each time
                     String response = new RequestHelper().createInvoice(gsonHelper.toJson(invoice));
                     JSONObject jsonObject = new JSONObject(response);
+                    String startDate = jsonObject.getString("time");
+                    String expirationDate = jsonObject.getString("expires");
                     receivingBip70Invoice = jsonObject.getString("paymentId");
-                    displayQRCode(receivingBip70Invoice);
+                    displayQRCode(receivingBip70Invoice, startDate, expirationDate);
                     Intent listenForBip70 = new Intent(MainActivity.ACTION_START_LISTENING_FOR_BIP70);
                     listenForBip70.putExtra("invoice_id", receivingBip70Invoice);
                     ExpectedPayments.getInstance().addExpectedPayment(receivingBip70Invoice, lAmount, strFiat);

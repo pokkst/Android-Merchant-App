@@ -57,6 +57,7 @@ public class PayBitcoinComSocketHandler {
                 try {
                     JSONObject json = new JSONObject(message);
                     String status = json.getString("status");
+                    System.out.println(status);
                     if (status.equals("paid")) {
                         if (webSocketListener != null) {
                             JSONArray outputs = json.getJSONArray("outputs");
