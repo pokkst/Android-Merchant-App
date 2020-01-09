@@ -62,6 +62,7 @@ import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 import static com.bitcoin.merchant.app.MainActivity.TAG;
 
@@ -70,6 +71,7 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
     private LinearLayout receivedLayout;
     private TextView tvFiatAmount;
     private TextView tvBtcAmount;
+    private TextView tvExpiryTimer;
     private ImageView ivReceivingQr;
     private LinearLayout progressLayout;
     private Button ivCancel;
@@ -150,6 +152,7 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
     private void initViews(View v) {
         tvFiatAmount = v.findViewById(R.id.tv_fiat_amount);
         tvBtcAmount = v.findViewById(R.id.tv_btc_amount);
+        tvExpiryTimer = v.findViewById(R.id.bip70_timer_tv);
         ivReceivingQr = v.findViewById(R.id.qr);
         progressLayout = v.findViewById(R.id.progressLayout);
         waitingLayout = v.findViewById(R.id.layout_waiting);
@@ -230,8 +233,8 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
                         @Override
                         public void onTick(long millisUntilFinished) {
                             long secondsLeft = millisUntilFinished / 1000L;
+                            tvExpiryTimer.setText(String.format(getResources().getConfiguration().locale, "%02d:%02d", secondsLeft / 60, secondsLeft % 60));
 
-                            System.out.println(secondsLeft);
                             if(secondsLeft <= 0) {
                                 cancelPayment();
                             }
