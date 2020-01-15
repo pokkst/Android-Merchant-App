@@ -44,7 +44,7 @@ public class MerchantNameEditorDialog {
                         dialog.dismiss();
                     }
                 });
-        if (! ctx.isFinishing()) {
+        if (!ctx.isFinishing()) {
             builder.show();
         }
         return true;

@@ -12,10 +12,8 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
-import androidx.fragment.app.FragmentActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import com.bitcoin.merchant.app.MainActivity;
 import com.bitcoin.merchant.app.R;
 import com.bitcoin.merchant.app.currency.CountryCurrency;
 import com.bitcoin.merchant.app.currency.CurrencyExchange;
@@ -30,14 +28,13 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
-import java.text.ParseException;
 import java.util.Currency;
 import java.util.Locale;
 
 public class PaymentInputFragment extends ToolbarAwareFragment {
-    private static final String TAG = "PaymentInputFragment";
     public static final String DEFAULT_CURRENCY_BCH = "BCH";
     public static final String ACTION_INTENT_RESET_AMOUNT = "RESET_AMOUNT";
+    private static final String TAG = "PaymentInputFragment";
     private static final double bitcoinLimit = 21_000_000.0;
     public static String AMOUNT_PAYABLE_FIAT = "AMOUNT_PAYABLE_FIAT";
     public static String AMOUNT_PAYABLE_BTC = "AMOUNT_PAYABLE_BTC";

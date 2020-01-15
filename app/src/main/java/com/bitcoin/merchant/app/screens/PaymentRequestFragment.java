@@ -32,9 +32,9 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.bitcoin.merchant.app.MainActivity;
 import com.bitcoin.merchant.app.R;
 import com.bitcoin.merchant.app.application.CashRegisterApplication;
-import com.bitcoin.merchant.app.network.paybitcoincom.Bip70InvoiceJson;
 import com.bitcoin.merchant.app.model.PaymentReceived;
 import com.bitcoin.merchant.app.network.ExpectedPayments;
+import com.bitcoin.merchant.app.network.paybitcoincom.Bip70InvoiceJson;
 import com.bitcoin.merchant.app.network.paybitcoincom.RequestHelper;
 import com.bitcoin.merchant.app.screens.dialogs.PaymentTooHighDialog;
 import com.bitcoin.merchant.app.screens.dialogs.PaymentTooLowDialog;
@@ -53,16 +53,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Locale;
 
 import static com.bitcoin.merchant.app.MainActivity.TAG;
 
@@ -77,7 +71,6 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
     private Button ivCancel;
     private Button ivDone;
     private String receivingBip70Invoice;
-    private boolean hasAPIKey = false;
     protected BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, final Intent intent) {
@@ -95,6 +88,7 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
             }
         }
     };
+    private boolean hasAPIKey = false;
     private String qrCodeUri;
 
     private void onPaymentReceived(PaymentReceived p) {
@@ -235,7 +229,7 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
                             long secondsLeft = millisUntilFinished / 1000L;
                             tvExpiryTimer.setText(String.format(getResources().getConfiguration().locale, "%02d:%02d", secondsLeft / 60, secondsLeft % 60));
 
-                            if(secondsLeft <= 0) {
+                            if (secondsLeft <= 0) {
                                 cancelPayment();
                             }
                         }
@@ -301,7 +295,7 @@ public class PaymentRequestFragment extends ToolbarAwareFragment {
                     invoice.memo = "Payment to " + PrefsUtil.getInstance(getApp()).getValue(PrefsUtil.MERCHANT_KEY_MERCHANT_NAME, "Bitcoin.com Pay merchant");
                     long lAmount = getLongAmount(amountBch);
                     invoice.amount = lAmount;
-                    if(hasAPIKey) {
+                    if (hasAPIKey) {
                         invoice.apiKey = AppUtil.getReceivingAddress(app);
                     } else {
                         String tempAddress;

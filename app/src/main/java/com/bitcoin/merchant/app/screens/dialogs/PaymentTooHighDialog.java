@@ -30,7 +30,7 @@ public class PaymentTooHighDialog {
                 dialog.dismiss();
             }
         });
-        if (! context.isFinishing()) {
+        if (!context.isFinishing()) {
             alert.show();
         }
     }

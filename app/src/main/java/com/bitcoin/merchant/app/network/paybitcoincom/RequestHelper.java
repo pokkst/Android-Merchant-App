@@ -28,7 +28,7 @@ public class RequestHelper {
 
     private String post(String endpoint, String json) throws IOException {
         URL url = new URL(API_URL + endpoint);
-        HttpURLConnection con = (HttpURLConnection)url.openConnection();
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setDoOutput(true);
         con.setDoInput(true);
         con.setInstanceFollowRedirects(false);

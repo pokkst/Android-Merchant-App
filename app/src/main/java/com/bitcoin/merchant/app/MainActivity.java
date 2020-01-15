@@ -36,6 +36,7 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 
 import com.bitcoin.merchant.app.application.CashRegisterApplication;
+import com.bitcoin.merchant.app.application.PaymentProcessor;
 import com.bitcoin.merchant.app.database.PaymentRecord;
 import com.bitcoin.merchant.app.model.PaymentReceived;
 import com.bitcoin.merchant.app.network.ExpectedAmounts;
@@ -51,7 +52,6 @@ import com.bitcoin.merchant.app.network.websocket.impl.paybitcoincom.PayBitcoinC
 import com.bitcoin.merchant.app.screens.TransactionsHistoryFragment;
 import com.bitcoin.merchant.app.screens.features.ToolbarAwareFragment;
 import com.bitcoin.merchant.app.util.AppUtil;
-import com.bitcoin.merchant.app.application.PaymentProcessor;
 import com.bitcoin.merchant.app.util.PrefsUtil;
 import com.crashlytics.android.Crashlytics;
 import com.google.android.material.navigation.NavigationView;
@@ -80,7 +80,6 @@ public class MainActivity extends AppCompatActivity
     private TxWebSocketHandler bitcoinDotComSocket = null;
     private TxWebSocketHandler blockchainDotInfoSocket = null;
     private PayBitcoinComSocketHandler paybitcoinDotComSocket = null;
-    private NetworkStateReceiver networkStateReceiver;
     protected BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, final Intent intent) {
@@ -120,14 +119,15 @@ public class MainActivity extends AppCompatActivity
             }
         }
     };
+    private NetworkStateReceiver networkStateReceiver;
     private Toolbar toolbar;
-
-    public Toolbar getToolbar() {
-        return toolbar;
-    }
 
     public static NavController getNav(Activity activity) {
         return Navigation.findNavController(activity, R.id.main_nav_controller);
+    }
+
+    public Toolbar getToolbar() {
+        return toolbar;
     }
 
     private NavController getNav() {

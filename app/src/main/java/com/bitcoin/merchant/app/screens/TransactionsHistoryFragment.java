@@ -234,6 +234,11 @@ public class TransactionsHistoryFragment extends ToolbarAwareFragment {
         LocalBroadcastManager.getInstance(activity).sendBroadcast(new Intent(MainActivity.ACTION_QUERY_ALL_UXTO));
     }
 
+    @Override
+    public boolean canFragmentBeDiscardedWhenInBackground() {
+        return true;
+    }
+
     private class LoadTxFromDatabaseTask extends AsyncTask<Void, Void, ArrayList<ContentValues>> {
         private boolean queryServer;
 
@@ -396,10 +401,5 @@ public class TransactionsHistoryFragment extends ToolbarAwareFragment {
                 return 1.0f;
             }
         }
-    }
-
-    @Override
-    public boolean canFragmentBeDiscardedWhenInBackground() {
-        return true;
     }
 }

@@ -52,7 +52,7 @@ public class CurrencySelectionDialog {
         builder.setCancelable(true);
         AlertDialog alert = builder.create();
         alert.setCanceledOnTouchOutside(true);
-        if (! ctx.isFinishing()) {
+        if (!ctx.isFinishing()) {
             alert.show();
         }
         return true;

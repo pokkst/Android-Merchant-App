@@ -40,7 +40,7 @@ public class AddNewAddressDialog {
                         settingsController.requestToOpenCamera();
                     }
                 });
-        if (! ctx.isFinishing()) {
+        if (!ctx.isFinishing()) {
             builder.show();
         }
     }
@@ -62,7 +62,7 @@ public class AddNewAddressDialog {
                         dialog.dismiss();
                     }
                 });
-        if (! ctx.isFinishing()) {
+        if (!ctx.isFinishing()) {
             builder.show();
         }
     }

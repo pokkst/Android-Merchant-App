@@ -57,7 +57,7 @@ public class PinCodeFragment extends ToolbarAwareFragment {
         View.OnClickListener digitListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                digitPressed(((TextView)v).getText().toString());
+                digitPressed(((TextView) v).getText().toString());
             }
         };
         rootView.findViewById(R.id.button0).setOnClickListener(digitListener);
