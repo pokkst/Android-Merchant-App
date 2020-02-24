@@ -9,6 +9,7 @@ import android.util.Log
 import com.bitcoin.merchant.app.application.CashRegisterApplication
 import com.crashlytics.android.Crashlytics
 import org.bitcoinj.crypto.AESUtil
+import org.bitcoinj.crypto.CharSequenceX
 import java.nio.charset.StandardCharsets
 import java.util.*
 
@@ -161,7 +162,7 @@ class DBControllerV3(app: CashRegisterApplication?) : SQLiteOpenHelper(app, DB, 
 
     private fun decryptValue(value: String): String {
         if (pw == null) {
-            pw = ("pin$salt").toCharArray() // legacy code
+            pw = CharSequenceX("pin$salt") // legacy code
         }
         return AESUtil.decrypt(value, pw, AESUtil.PinPbkdf2Iterations)
     }
@@ -215,7 +216,7 @@ class DBControllerV3(app: CashRegisterApplication?) : SQLiteOpenHelper(app, DB, 
         private const val TAG = "DBControllerV3"
         private const val DB = "paymentsV3.db"
         private const val TABLE = "payment"
-        private var pw: CharArray? = null
+        private var pw: CharSequenceX? = null
     }
 
 }
