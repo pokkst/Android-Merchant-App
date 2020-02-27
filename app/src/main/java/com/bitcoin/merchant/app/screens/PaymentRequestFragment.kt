@@ -370,6 +370,17 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
         }
     }
 
+    private fun startShareIntent(paymentUrl: String) {
+        val sendIntent: Intent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, "Please pay your invoice here: $paymentUrl")
+            type = "text/plain"
+        }
+
+        val shareIntent = Intent.createChooser(sendIntent, null)
+        startActivity(shareIntent)
+    }
+
     override val isBackAllowed: Boolean
         get() {
             return backButtonAllowed
