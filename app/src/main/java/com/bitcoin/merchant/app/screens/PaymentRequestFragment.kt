@@ -60,7 +60,6 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
     private lateinit var receivedLayout: LinearLayout
     private lateinit var tvConnectionStatus: ImageView
     private lateinit var tvFiatAmount: TextView
-    private lateinit var tvBtcAmount: TextView
     private lateinit var tvExpiryTimer: TextView
     private lateinit var ivReceivingQr: ImageView
     private lateinit var progressLayout: LinearLayout
@@ -217,13 +216,12 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
     private fun initViews(v: View) {
         tvConnectionStatus = v.findViewById(R.id.tv_connection_status)
         tvFiatAmount = v.findViewById(R.id.tv_fiat_amount)
-        tvBtcAmount = v.findViewById(R.id.tv_btc_amount)
         tvExpiryTimer = v.findViewById(R.id.bip70_timer_tv)
         ivReceivingQr = v.findViewById(R.id.qr)
         progressLayout = v.findViewById(R.id.progressLayout)
         waitingLayout = v.findViewById(R.id.layout_waiting)
         receivedLayout = v.findViewById(R.id.layout_complete)
-        ivCancel = v.findViewById(R.id.btn_cancel)
+        ivCancel = v.findViewById(R.id.iv_cancel)
         ivDone = v.findViewById(R.id.iv_done)
         fabShare = v.findViewById(R.id.fab_share)
         setWorkInProgress(true)
@@ -308,7 +306,8 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
                 bip70Manager.startWebsockets(invoice.paymentId)
                 qrCodeUri = invoice.walletUri
                 Log.d(MainActivity.TAG, "paymentUrl:${invoice.walletUri}")
-                getQrCodeAsBitmap(invoice.walletUri)
+                val width = activity.resources.getInteger(R.integer.qr_code_width)
+                getQrCodeAsBitmap(invoice.walletUri, width)
             } catch (e: Exception) {
                 DialogHelper.show(activity, activity.getString(R.string.error), e.message) { exitScreen() }
                 null
@@ -317,7 +316,7 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
     }
 
     @Throws(Exception::class)
-    private fun getQrCodeAsBitmap(text: String, width: Int = 260): Bitmap {
+    private fun getQrCodeAsBitmap(text: String, width: Int): Bitmap {
         val result: BitMatrix = try {
             MultiFormatWriter().encode(text, BarcodeFormat.QR_CODE, width, width, null)
         } catch (e: Exception) {
@@ -341,7 +340,6 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
         val f = AmountUtil(activity)
         tvFiatAmount.text = f.formatFiat(i.fiatTotal)
         tvFiatAmount.visibility = View.VISIBLE
-        tvBtcAmount.text = f.formatBch(i.totalBchAmount.toDouble())
         ivReceivingQr.setImageBitmap(bitmap)
         initiateCountdown(i)
     }
