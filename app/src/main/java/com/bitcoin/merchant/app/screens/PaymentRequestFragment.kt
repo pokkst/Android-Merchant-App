@@ -386,8 +386,8 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
             //TODO remove hardcoded and put them in strings.xml
             val urlWithoutPrefix = paymentUrl.replace("bitcoincash:?r=", "")
             val invoiceId = urlWithoutPrefix.replace("https://pay.bitcoin.com/i/", "")
-            val bitmap = ivReceivingQr.drawable.toBitmap(240, 240)
-            val file = File(this@PaymentRequestFragment.app.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "invoice_$invoiceId.png")
+            val bitmap = ivReceivingQr.drawable.toBitmap(220, 220)
+            val file = File(this@PaymentRequestFragment.app.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "invoice.png")
             val out = FileOutputStream(file)
             bitmap.compress(Bitmap.CompressFormat.PNG, 80, out)
             out.close();
@@ -398,7 +398,7 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
                 putExtra(Intent.EXTRA_TEXT, "Please pay your invoice here: $urlWithoutPrefix")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 putExtra(Intent.EXTRA_STREAM, bitmapUri)
-                type = "image/png"
+                type = "image/*"
             }
 
             val shareIntent = Intent.createChooser(sendIntent, null)
