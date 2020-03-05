@@ -6,8 +6,11 @@ import android.graphics.Color.BLACK
 import android.graphics.Color.WHITE
 import android.media.AudioManager
 import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -16,6 +19,8 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.content.FileProvider
+import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.bitcoin.merchant.app.MainActivity
@@ -40,6 +45,10 @@ import org.bitcoindotcom.bchprocessor.bip70.model.Bip70Action
 import org.bitcoindotcom.bchprocessor.bip70.model.InvoiceRequest
 import org.bitcoindotcom.bchprocessor.bip70.model.InvoiceStatus
 import retrofit2.Response
+import java.io.File
+import java.io.FileNotFoundException
+import java.io.FileOutputStream
+import java.io.IOException
 import java.util.*
 
 class PaymentRequestFragment : ToolbarAwareFragment() {
@@ -375,16 +384,30 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
     }
 
     private fun startShareIntent(paymentUrl: String) {
-        val sendIntent: Intent = Intent().apply {
-            //TODO extract string resource
+        try {
+            //TODO remove hardcoded and put them in strings.xml
             val urlWithoutPrefix = paymentUrl.replace("bitcoincash:?r=", "")
-            action = Intent.ACTION_SEND
-            putExtra(Intent.EXTRA_TEXT, "Please pay your invoice here: $urlWithoutPrefix")
-            type = "text/plain"
-        }
+            val invoiceId = urlWithoutPrefix.replace("https://pay.bitcoin.com/i/", "")
+            val bitmap = ivReceivingQr.drawable.toBitmap(240, 240)
+            val file = File(this@PaymentRequestFragment.app.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "invoice_$invoiceId.png")
+            val out = FileOutputStream(file)
+            bitmap.compress(Bitmap.CompressFormat.PNG, 80, out)
+            out.close();
+            val bitmapUri = FileProvider.getUriForFile(this@PaymentRequestFragment.context!!, context?.applicationContext?.packageName + ".provider", file)
+            val sendIntent: Intent = Intent().apply {
+                action = Intent.ACTION_SEND
+                //TODO extract string resource
+                putExtra(Intent.EXTRA_TEXT, "Please pay your invoice here: $urlWithoutPrefix")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                putExtra(Intent.EXTRA_STREAM, bitmapUri)
+                type = "image/png"
+            }
 
-        val shareIntent = Intent.createChooser(sendIntent, null)
-        startActivity(shareIntent)
+            val shareIntent = Intent.createChooser(sendIntent, null)
+            startActivity(shareIntent)
+        } catch (e: Exception) {
+
+        }
     }
 
     override val isBackAllowed: Boolean
