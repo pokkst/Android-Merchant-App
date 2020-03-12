@@ -15,7 +15,6 @@ public class Tx {
     public long confirmations;
     public long amount;
     public Output[] outputs;
-    public Transaction transaction;
 
     public static class Output {
         public String address;

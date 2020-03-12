@@ -161,6 +161,7 @@ class PaymentInputFragment : ToolbarAwareFragment() {
             updateAmounts()
             val extras = Bundle()
             extras.putDouble(AMOUNT_PAYABLE_FIAT, amountPayableFiat)
+            extras.putBoolean(IS_SLP_INVOICE, true)
             nav.navigate(R.id.nav_to_payment_request_screen, extras)
         } else {
             SnackHelper.show(activity, activity.getText(R.string.invalid_amount),
@@ -229,5 +230,6 @@ class PaymentInputFragment : ToolbarAwareFragment() {
         private const val TAG = "PaymentInputFragment"
         const val ACTION_INTENT_RESET_AMOUNT = "RESET_AMOUNT"
         var AMOUNT_PAYABLE_FIAT = "AMOUNT_PAYABLE_FIAT"
+        var IS_SLP_INVOICE = "IS_SLP_INVOICE"
     }
 }

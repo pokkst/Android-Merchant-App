@@ -147,15 +147,17 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
         bip70Manager = Bip70Manager(app)
         val args = arguments
         val amountFiat = args?.getDouble(PaymentInputFragment.AMOUNT_PAYABLE_FIAT, 0.0) ?: 0.0
+        val isSlp = args?.getBoolean(PaymentInputFragment.IS_SLP_INVOICE, false) ?: false
         if (amountFiat > 0.0) {
-            createNewInvoice(amountFiat)
+            createNewInvoice(amountFiat, isSlp)
         } else {
             resumeExistingInvoice()
         }
         return v
     }
 
-    private fun createNewInvoice(amountFiat: Double) {
+    private fun createNewInvoice(amountFiat: Double, isSlp: Boolean) {
+        //TODO add token id variable, token amount, etc.
         viewLifecycleOwner.lifecycleScope.launch {
             val invoiceRequest = withContext(Dispatchers.IO) {
                 createInvoice(amountFiat, Settings.getCountryCurrencyLocale(activity).currency)
