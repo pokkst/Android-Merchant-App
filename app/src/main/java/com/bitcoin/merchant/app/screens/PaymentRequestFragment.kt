@@ -148,35 +148,53 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
         val args = arguments
         val amountFiat = args?.getDouble(PaymentInputFragment.AMOUNT_PAYABLE_FIAT, 0.0) ?: 0.0
         val isSlp = args?.getBoolean(PaymentInputFragment.IS_SLP_INVOICE, false) ?: false
+        val slpAmount = if(isSlp) {
+            args?.getDouble(PaymentInputFragment.AMOUNT_SLP_TOKEN, 0.0) ?: 0.0
+        } else {
+            0.0
+        }
+
+        val slpTokenId = if(isSlp) {
+            args?.getString(PaymentInputFragment.SLP_TOKEN_ID, "") ?: ""
+        } else {
+            ""
+        }
+
         if (amountFiat > 0.0) {
-            createNewInvoice(amountFiat, isSlp)
+            createNewInvoice(amountFiat, isSlp, slpAmount, slpTokenId)
         } else {
             resumeExistingInvoice()
         }
         return v
     }
 
-    private fun createNewInvoice(amountFiat: Double, isSlp: Boolean) {
-        //TODO add token id variable, token amount, etc.
+    private fun createNewInvoice(amountFiat: Double, isSlp: Boolean, slpAmount: Double, slpTokenId: String) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val invoiceRequest = withContext(Dispatchers.IO) {
-                createInvoice(amountFiat, Settings.getCountryCurrencyLocale(activity).currency)
-            }
-            if (invoiceRequest == null) {
-                unableToDisplayInvoice()
-            } else {
-                // do NOT delete active invoice too early
-                // because this Fragment is always instantiated below the PaymentRequest
-                // when resuming from a crash on the PaymentRequest
-                Settings.deleteActiveInvoice(activity)
-                tvFiatAmount.text = AmountUtil(activity).formatFiat(amountFiat)
-                tvCoinAmount.visibility = View.INVISIBLE  // default values are incorrect
+            if(isSlp) {
+                //Creating SLP invoice here
                 setWorkInProgress(true)
-                val invoice: InvoiceStatus? = downloadInvoice(invoiceRequest)
-                invoice?.let {
-                    connectToSocketAndGenerateQrCode(invoice)?.also { showQrCodeAndAmountFields(invoice, it) }
+                //TODO create invoice
+            } else {
+                //Normal BIP70 invoice with Bitcoin Cash
+                val invoiceRequest = withContext(Dispatchers.IO) {
+                    createInvoice(amountFiat, Settings.getCountryCurrencyLocale(activity).currency)
                 }
-                setWorkInProgress(false)
+                if (invoiceRequest == null) {
+                    unableToDisplayInvoice()
+                } else {
+                    // do NOT delete active invoice too early
+                    // because this Fragment is always instantiated below the PaymentRequest
+                    // when resuming from a crash on the PaymentRequest
+                    Settings.deleteActiveInvoice(activity)
+                    tvFiatAmount.text = AmountUtil(activity).formatFiat(amountFiat)
+                    tvCoinAmount.visibility = View.INVISIBLE  // default values are incorrect
+                    setWorkInProgress(true)
+                    val invoice: InvoiceStatus? = downloadInvoice(invoiceRequest)
+                    invoice?.let {
+                        connectToSocketAndGenerateQrCode(invoice)?.also { showQrCodeAndAmountFields(invoice, it) }
+                    }
+                    setWorkInProgress(false)
+                }
             }
         }
     }

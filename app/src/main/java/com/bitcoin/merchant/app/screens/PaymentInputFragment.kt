@@ -158,10 +158,21 @@ class PaymentInputFragment : ToolbarAwareFragment() {
             return
         }
         if (validateAmount()) {
+            //TODO replace with user input from UI, this is hardcoded for testing purposes
+            val isSlp: Boolean = true
             updateAmounts()
             val extras = Bundle()
             extras.putDouble(AMOUNT_PAYABLE_FIAT, amountPayableFiat)
-            extras.putBoolean(IS_SLP_INVOICE, true)
+            extras.putBoolean(IS_SLP_INVOICE, isSlp)
+
+            if(isSlp) {
+                //TODO replace with user input from UI, this is hardcoded for testing purposes
+                val slpTokenId: String = ""
+                val slpTokenAmount: Double = 10.0
+                extras.putString(SLP_TOKEN_ID, slpTokenId)
+                extras.putDouble(AMOUNT_SLP_TOKEN, slpTokenAmount)
+            }
+
             nav.navigate(R.id.nav_to_payment_request_screen, extras)
         } else {
             SnackHelper.show(activity, activity.getText(R.string.invalid_amount),
@@ -231,5 +242,7 @@ class PaymentInputFragment : ToolbarAwareFragment() {
         const val ACTION_INTENT_RESET_AMOUNT = "RESET_AMOUNT"
         var AMOUNT_PAYABLE_FIAT = "AMOUNT_PAYABLE_FIAT"
         var IS_SLP_INVOICE = "IS_SLP_INVOICE"
+        var SLP_TOKEN_ID = "SLP_TOKEN_ID"
+        var AMOUNT_SLP_TOKEN = "AMOUNT_SLP_TOKEN"
     }
 }
