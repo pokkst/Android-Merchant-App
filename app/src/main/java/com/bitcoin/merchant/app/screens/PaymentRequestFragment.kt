@@ -25,14 +25,15 @@ import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.bitcoin.merchant.app.MainActivity
 import com.bitcoin.merchant.app.R
+import com.bitcoin.merchant.app.model.InvoiceRequestSlp
+import com.bitcoin.merchant.app.model.PaymentReceived
 import com.bitcoin.merchant.app.model.PaymentTarget
+import com.bitcoin.merchant.app.network.websocket.WebSocketListener
+import com.bitcoin.merchant.app.network.websocket.impl.bitcoincom.BitcoinComSocketHandler
 import com.bitcoin.merchant.app.screens.dialogs.DialogHelper
 import com.bitcoin.merchant.app.screens.dialogs.SnackHelper
 import com.bitcoin.merchant.app.screens.features.ToolbarAwareFragment
-import com.bitcoin.merchant.app.util.AmountUtil
-import com.bitcoin.merchant.app.util.AppUtil
-import com.bitcoin.merchant.app.util.MonetaryUtil
-import com.bitcoin.merchant.app.util.Settings
+import com.bitcoin.merchant.app.util.*
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
@@ -52,7 +53,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.util.*
 
-class PaymentRequestFragment : ToolbarAwareFragment() {
+class PaymentRequestFragment : ToolbarAwareFragment(), WebSocketListener {
     // Ensure that pressing 'BACK' button stays on the 'Payment REQUEST' screen to NOT lose the active invoice
     // unless we are exiting the screen
     private var backButtonAllowed: Boolean = false
@@ -69,6 +70,8 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
     private lateinit var ivDone: Button
     private lateinit var bip70Manager: Bip70Manager
     private lateinit var bip70PayService: Bip70PayService
+    private lateinit var bitcoinDotComSocket: BitcoinComSocketHandler
+
     private var lastProcessedInvoicePaymentId: String? = null
     private var qrCodeUri: String? = null
     private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
@@ -143,6 +146,9 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
         initViews(v)
         setToolbarVisible(false)
         registerReceiver()
+        bitcoinDotComSocket = BitcoinComSocketHandler()
+        bitcoinDotComSocket.setListener(this)
+        bitcoinDotComSocket.start()
         bip70PayService = Bip70PayService.create(resources.getString(R.string.bip70_bitcoin_com_host))
         bip70Manager = Bip70Manager(app)
         val args = arguments
@@ -174,6 +180,22 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
                 //Creating SLP invoice here
                 setWorkInProgress(true)
                 //TODO create invoice
+                val invoiceRequest = withContext(Dispatchers.IO) {
+                    createSlpInvoice(slpTokenId, slpAmount)
+                }
+                if (invoiceRequest == null) {
+                    unableToDisplayInvoice()
+                } else {
+                    // do NOT delete active invoice too early
+                    // because this Fragment is always instantiated below the PaymentRequest
+                    // when resuming from a crash on the PaymentRequest
+                    Settings.deleteActiveInvoice(activity)
+                    tvFiatAmount.text = AmountUtil(activity).formatFiat(amountFiat)
+                    tvCoinAmount.visibility = View.INVISIBLE  // default values are incorrect
+                    setWorkInProgress(false)
+                    val bitmap = connectToSlpSocketAndGenerateQrCode(invoiceRequest)
+                    showSlpQrCodeAndAmountFields(invoiceRequest, bitmap)
+                }
             } else {
                 //Normal BIP70 invoice with Bitcoin Cash
                 val invoiceRequest = withContext(Dispatchers.IO) {
@@ -286,6 +308,30 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
         }
     }
 
+    private fun createSlpInvoice(tokenId: String, tokenAmount: Double): InvoiceRequestSlp? {
+        //TODO save specific SLP payment target
+        val paymentTarget = Settings.getPaymentTarget(activity)
+        val i = InvoiceRequestSlp(tokenId, tokenAmount)
+        //TODO cleanup with createInvoice
+        when (paymentTarget.type) {
+            PaymentTarget.Type.INVALID -> return null
+            PaymentTarget.Type.ADDRESS -> i.address = paymentTarget.legacyAddress
+            PaymentTarget.Type.XPUB -> try {
+                // known limitation: we only check for used addresses when setting the xPub
+                // as a consequence if the same xPubKey is used on multiple cashiers/terminals
+                // then addresses can be reused. Address reuse is not an issue
+                // because the BIP-70 server is the one only broadcasting the TX to that address
+                // and thus it is aware of which invoice is being paid without possible confusion
+                i.address = app.wallet.getAddressFromXPubAndMoveToNext()
+                Log.i(MainActivity.TAG, "BCH-address(xPub) to receive: " + i.address)
+            } catch (e: Exception) {
+                Log.e(MainActivity.TAG, "", e)
+                return null
+            }
+        }
+        return i
+    }
+
     private fun createInvoice(amountFiat: Double, currency: String): InvoiceRequest? {
         val paymentTarget = Settings.getPaymentTarget(activity)
         val i = InvoiceRequest("" + amountFiat, currency)
@@ -340,6 +386,24 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
         }
     }
 
+    private suspend fun connectToSlpSocketAndGenerateQrCode(invoice: InvoiceRequestSlp): Bitmap? {
+        return withContext(Dispatchers.IO) {
+            try {
+                // connect the socket first before showing the bitmap as connection takes longer
+                invoice.address?.let { bitcoinDotComSocket.subscribeToAddress(it) }
+                val addressInCashAddr = invoice.address?.let { AddressUtil.toCashAddress(it) }
+                val uri = "${AddressUtil.toSimpleLedgerAddress(addressInCashAddr.toString())}?amount=${invoice.amount}-${invoice.tokenId}"
+                qrCodeUri = uri
+                Log.d(MainActivity.TAG, "paymentUrl:${uri}")
+                val width = activity.resources.getInteger(R.integer.qr_code_width)
+                getQrCodeAsBitmap(uri, width)
+            } catch (e: Exception) {
+                DialogHelper.show(activity, activity.getString(R.string.error), e.message) { exitScreen() }
+                null
+            }
+        }
+    }
+
     @Throws(Exception::class)
     private fun getQrCodeAsBitmap(text: String, width: Int): Bitmap {
         val result: BitMatrix = try {
@@ -359,6 +423,13 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
         val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         bitmap.setPixels(pixels, 0, width, 0, 0, w, h)
         return bitmap
+    }
+
+    private fun showSlpQrCodeAndAmountFields(i: InvoiceRequestSlp, bitmap: Bitmap?) {
+        tvFiatAmount.text = i.amount.toString()
+        tvFiatAmount.visibility = View.VISIBLE
+        tvCoinAmount.visibility = View.VISIBLE
+        ivReceivingQr.setImageBitmap(bitmap)
     }
 
     private fun showQrCodeAndAmountFields(i: InvoiceStatus, bitmap: Bitmap) {
@@ -439,4 +510,9 @@ class PaymentRequestFragment : ToolbarAwareFragment() {
         get() {
             return backButtonAllowed
         }
+
+    override fun onIncomingPayment(paymentReceived: PaymentReceived?) {
+        println("RECEIVED PAYMENT")
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
 }

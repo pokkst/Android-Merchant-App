@@ -167,7 +167,7 @@ class PaymentInputFragment : ToolbarAwareFragment() {
 
             if(isSlp) {
                 //TODO replace with user input from UI, this is hardcoded for testing purposes
-                val slpTokenId: String = ""
+                val slpTokenId: String = "4de69e374a8ed21cbddd47f2338cc0f479dc58daa2bbe11cd604ca488eca0ddf"
                 val slpTokenAmount: Double = 10.0
                 extras.putString(SLP_TOKEN_ID, slpTokenId)
                 extras.putDouble(AMOUNT_SLP_TOKEN, slpTokenAmount)

@@ -1,42 +1,37 @@
-package com.bitcoin.merchant.app.model;
+package com.bitcoin.merchant.app.model
 
-import org.bitcoinj.core.Transaction;
-
-import java.util.Arrays;
+import java.util.*
 
 // {
 // "txid":"ABCDEF...", "fees":0, "confirmations":0, "amount":27420,
 // "outputs": [{"address":"1...", "value":27420}]
 // }
-public class Tx {
+class Tx {
     // do NOT change names as they are used by Gson
-    public String txid;
-    public long fees;
-    public long confirmations;
-    public long amount;
-    public Output[] outputs;
+    var txid: String? = null
+    var fees: Long = 0
+    var confirmations: Long = 0
+    var amount: Long = 0
+    var outputs: Array<Output>? = null
 
-    public static class Output {
-        public String address;
-        public long value;
-
-        @Override
-        public String toString() {
+    class Output {
+        var address: String? = null
+        var value: Long = 0
+        override fun toString(): String {
             return "Output{" +
                     "address='" + address + '\'' +
                     ", value=" + value +
-                    '}';
+                    '}'
         }
     }
 
-    @Override
-    public String toString() {
+    override fun toString(): String {
         return "Tx{" +
                 "txid='" + txid + '\'' +
                 ", fees=" + fees +
                 ", confirmations=" + confirmations +
                 ", amount=" + amount +
                 ", outputs=" + Arrays.toString(outputs) +
-                '}';
+                '}'
     }
 }
