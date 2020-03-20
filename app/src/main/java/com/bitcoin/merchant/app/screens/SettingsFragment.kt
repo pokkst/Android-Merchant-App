@@ -103,7 +103,8 @@ class SettingsFragment : ToolbarAwareFragment() {
         setCurrencySummary(Settings.getCountryCurrencyLocale(activity))
         lvLocalCurrency.setOnClickListener {
             Analytics.settings_currency_edit.send()
-            CurrencySelectionDialog(this@SettingsFragment).show()
+            nav.navigate(R.id.nav_to_currency_selection_screen)
+           // CurrencySelectionDialog(this@SettingsFragment).show()
         }
     }
 

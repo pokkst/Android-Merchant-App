@@ -115,5 +115,21 @@
             app:destination="@id/pin_code_screen"
             app:enterAnim="@anim/slide_in_from_left"
             app:popExitAnim="@anim/slide_out_from_right"/>
+        <action
+            android:id="@+id/nav_to_currency_selection_screen"
+            app:destination="@id/currency_selection_screen"
+            app:enterAnim="@anim/slide_in_from_left"
+            app:popExitAnim="@anim/slide_out_from_right"/>
+    </fragment>
+    <fragment
+        android:id="@+id/currency_selection_screen"
+        android:name="com.bitcoin.merchant.app.screens.CurrencySelectionFragment"
+        android:label="@string/settings_local_currency"
+        tools:layout="@layout/fragment_currency_selection">
+        <action
+            android:id="@+id/nav_to_settings_screen"
+            app:destination="@id/settings_screen"
+            app:enterAnim="@anim/slide_in_from_left"
+            app:popExitAnim="@anim/slide_out_from_right"/>
     </fragment>
 </navigation>

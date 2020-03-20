@@ -16,6 +16,7 @@ import com.bitcoin.merchant.app.model.Analytics
 import com.bitcoin.merchant.app.model.CountryCurrencyLocale
 import com.bitcoin.merchant.app.screens.PaymentInputFragment
 import com.bitcoin.merchant.app.screens.SettingsFragment
+import com.bitcoin.merchant.app.screens.features.ToolbarAwareFragment
 import com.bitcoin.merchant.app.util.Settings
 
 class CurrencySelectionDialog(private val settingsController: SettingsFragment) {
